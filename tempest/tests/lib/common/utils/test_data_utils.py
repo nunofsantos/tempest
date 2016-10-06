@@ -123,6 +123,18 @@ class TestDataUtils(base.TestCase):
         actual = data_utils.arbitrary_string(size=5, base_text="deadbeaf")
         self.assertEqual(actual, "deadb")
 
+    def test_to_bytes(self):
+        returned_bytes = data_utils.to_bytes("test")
+        self.assertEqual(b"test", returned_bytes)
+
+    def test_arbitrary_bytes(self):
+        actual = data_utils.arbitrary_bytes()
+        self.assertEqual(actual, b"test")
+        actual = data_utils.arbitrary_bytes(size=30, base_text="abc")
+        self.assertEqual(actual, b"abc" * int(30 / len(b"abc")))
+        actual = data_utils.arbitrary_bytes(size=5, base_text="deadbeaf")
+        self.assertEqual(actual, b"deadb")
+
     def test_random_bytes(self):
         actual = data_utils.random_bytes()  # default size=1024
         self.assertIsInstance(actual, bytes)

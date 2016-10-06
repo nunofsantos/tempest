@@ -165,6 +165,40 @@ def arbitrary_string(size=4, base_text=None):
     return ''.join(itertools.islice(itertools.cycle(base_text), size))
 
 
+def to_bytes(input_string):
+    """Return a bytestring for a string input
+
+    Converts an input string into whatever the bytes
+    type is for this version of python.
+
+    :param str input_string: the input string
+    :return: input_string converted to bytes type
+    :rtype: bytes
+    """
+    try:
+        return bytes(input_string)
+    except TypeError:
+        pass
+
+    return bytes(input_string, 'utf8')
+
+
+def arbitrary_bytes(size=4, base_text=None):
+    """Return size characters from base_text as bytes type.
+
+    See 'arbitrary_string'. This method is equivalent, except it
+    returns the data as type 'bytes' instead of 'str'. In python 2,
+    this bytes == str so these methods are equivalent there. In
+    python 3, these types are different.
+    :param int size: a returning characters size
+    :param str base_text: a string you want to repeat
+    :return: size bytes
+    :rtype: bytes
+    """
+    output_string = arbitrary_string(size, base_text)
+    return to_bytes(output_string)
+
+
 def random_bytes(size=1024):
     """Return size randomly selected bytes as a string
 
