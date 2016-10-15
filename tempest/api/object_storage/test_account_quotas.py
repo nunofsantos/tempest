@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import testtools
+
 from tempest.api.object_storage import base
 from tempest.common.utils import data_utils
 from tempest import config
@@ -22,14 +24,15 @@ CONF = config.CONF
 
 class AccountQuotasTest(base.BaseObjectTest):
 
-    credentials = [['operator', CONF.object_storage.operator_role],
-                   ['reseller', CONF.object_storage.reseller_admin_role]]
+    reseller_enabled = CONF.identity_feature_enabled.reseller
+    credentials = [['operator', CONF.object_storage.operator_role]]
 
     @classmethod
     def setup_credentials(cls):
         super(AccountQuotasTest, cls).setup_credentials()
         cls.os = cls.os_roles_operator
-        cls.os_reselleradmin = cls.os_roles_reseller
+        if cls.reseller_enabled:
+            cls.os_reselleradmin = cls.os_roles_reseller
 
     @classmethod
     def resource_setup(cls):
@@ -38,36 +41,41 @@ class AccountQuotasTest(base.BaseObjectTest):
 
         # Retrieve a ResellerAdmin auth data and use it to set a quota
         # on the client's account
-        cls.reselleradmin_auth_data = \
-            cls.os_reselleradmin.auth_provider.auth_data
+        if cls.reseller_enabled:
+            cls.reselleradmin_auth_data = \
+                cls.os_reselleradmin.auth_provider.auth_data
 
     def setUp(self):
         super(AccountQuotasTest, self).setUp()
 
         # Set the reselleradmin auth in headers for next account_client
         # request
-        self.account_client.auth_provider.set_alt_auth_data(
-            request_part='headers',
-            auth_data=self.reselleradmin_auth_data
-        )
-        # Set a quota of 20 bytes on the user's account before each test
-        headers = {"X-Account-Meta-Quota-Bytes": "20"}
+        if self.reseller_enabled:
+            self.credentials.append(['reseller',
+                                     CONF.object_storage.reseller_admin_role])
+            self.account_client.auth_provider.set_alt_auth_data(
+                request_part='headers',
+                auth_data=self.reselleradmin_auth_data
+            )
+            # Set a quota of 20 bytes on the user's account before each test
+            headers = {"X-Account-Meta-Quota-Bytes": "20"}
 
-        self.os.account_client.request("POST", url="", headers=headers,
-                                       body="")
+            self.os.account_client.request("POST", url="", headers=headers,
+                                           body="")
 
     def tearDown(self):
         # Set the reselleradmin auth in headers for next account_client
         # request
-        self.account_client.auth_provider.set_alt_auth_data(
-            request_part='headers',
-            auth_data=self.reselleradmin_auth_data
-        )
-        # remove the quota from the container
-        headers = {"X-Remove-Account-Meta-Quota-Bytes": "x"}
+        if self.reseller_enabled:
+            self.account_client.auth_provider.set_alt_auth_data(
+                request_part='headers',
+                auth_data=self.reselleradmin_auth_data
+            )
+            # remove the quota from the container
+            headers = {"X-Remove-Account-Meta-Quota-Bytes": "x"}
 
-        self.os.account_client.request("POST", url="", headers=headers,
-                                       body="")
+            self.os.account_client.request("POST", url="", headers=headers,
+                                           body="")
         super(AccountQuotasTest, self).tearDown()
 
     @classmethod
@@ -89,6 +97,8 @@ class AccountQuotasTest(base.BaseObjectTest):
     @test.attr(type=["smoke"])
     @test.idempotent_id('63f51f9f-5f1d-4fc6-b5be-d454d70949d6')
     @test.requires_ext(extension='account_quotas', service='object')
+    @testtools.skipUnless(CONF.identity_feature_enabled.reseller,
+                          'Reseller not enabled.')
     def test_admin_modify_quota(self):
         """Test ResellerAdmin can modify/remove the quota on a user's account
 
