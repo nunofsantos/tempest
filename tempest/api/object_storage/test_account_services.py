@@ -61,7 +61,7 @@ class AccountTest(base.BaseObjectTest):
 
         self.assertIsNotNone(container_list)
         for container_name in self.containers:
-            self.assertIn(container_name, container_list)
+            self.assertIn(container_name.encode(), container_list)
 
     @test.idempotent_id('884ec421-fbad-4fcc-916b-0580f2699565')
     def test_list_no_containers(self):
