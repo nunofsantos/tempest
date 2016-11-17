@@ -24,14 +24,15 @@ CONF = config.CONF
 
 class AccountQuotasTest(base.BaseObjectTest):
 
-    reseller_enabled = CONF.identity_feature_enabled.reseller
-    credentials = [['operator', CONF.object_storage.operator_role]]
+    credentials = [['operator', CONF.object_storage.operator_role],
+                   ['reseller', CONF.object_storage.reseller_admin_role]
+                   if CONF.identity_feature_enabled.reseller else None]
 
     @classmethod
     def setup_credentials(cls):
         super(AccountQuotasTest, cls).setup_credentials()
         cls.os = cls.os_roles_operator
-        if cls.reseller_enabled:
+        if CONF.identity_feature_enabled.reseller:
             cls.os_reselleradmin = cls.os_roles_reseller
 
     @classmethod
@@ -41,7 +42,7 @@ class AccountQuotasTest(base.BaseObjectTest):
 
         # Retrieve a ResellerAdmin auth data and use it to set a quota
         # on the client's account
-        if cls.reseller_enabled:
+        if CONF.identity_feature_enabled.reseller:
             cls.reselleradmin_auth_data = \
                 cls.os_reselleradmin.auth_provider.auth_data
 
@@ -50,9 +51,7 @@ class AccountQuotasTest(base.BaseObjectTest):
 
         # Set the reselleradmin auth in headers for next account_client
         # request
-        if self.reseller_enabled:
-            self.credentials.append(['reseller',
-                                     CONF.object_storage.reseller_admin_role])
+        if CONF.identity_feature_enabled.reseller:
             self.account_client.auth_provider.set_alt_auth_data(
                 request_part='headers',
                 auth_data=self.reselleradmin_auth_data
@@ -66,7 +65,7 @@ class AccountQuotasTest(base.BaseObjectTest):
     def tearDown(self):
         # Set the reselleradmin auth in headers for next account_client
         # request
-        if self.reseller_enabled:
+        if CONF.identity_feature_enabled.reseller:
             self.account_client.auth_provider.set_alt_auth_data(
                 request_part='headers',
                 auth_data=self.reselleradmin_auth_data

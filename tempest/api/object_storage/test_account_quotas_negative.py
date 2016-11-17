@@ -23,13 +23,15 @@ CONF = config.CONF
 class AccountQuotasNegativeTest(base.BaseObjectTest):
 
     credentials = [['operator', CONF.object_storage.operator_role],
-                   ['reseller', CONF.object_storage.reseller_admin_role]]
+                   ['reseller', CONF.object_storage.reseller_admin_role]
+                   if CONF.identity_feature_enabled.reseller else None]
 
     @classmethod
     def setup_credentials(cls):
         super(AccountQuotasNegativeTest, cls).setup_credentials()
         cls.os = cls.os_roles_operator
-        cls.os_reselleradmin = cls.os_roles_reseller
+        if CONF.identity_feature_enabled.reseller:
+            cls.os_reselleradmin = cls.os_roles_reseller
 
     @classmethod
     def resource_setup(cls):
@@ -38,35 +40,38 @@ class AccountQuotasNegativeTest(base.BaseObjectTest):
 
         # Retrieve a ResellerAdmin auth data and use it to set a quota
         # on the client's account
-        cls.reselleradmin_auth_data = \
-            cls.os_reselleradmin.auth_provider.auth_data
+        if CONF.identity_feature_enabled.reseller:
+            cls.reselleradmin_auth_data = \
+                cls.os_reselleradmin.auth_provider.auth_data
 
     def setUp(self):
         super(AccountQuotasNegativeTest, self).setUp()
         # Set the reselleradmin auth in headers for next account_client
         # request
-        self.account_client.auth_provider.set_alt_auth_data(
-            request_part='headers',
-            auth_data=self.reselleradmin_auth_data
-        )
-        # Set a quota of 20 bytes on the user's account before each test
-        headers = {"X-Account-Meta-Quota-Bytes": "20"}
+        if CONF.identity_feature_enabled.reseller:
+            self.account_client.auth_provider.set_alt_auth_data(
+                request_part='headers',
+                auth_data=self.reselleradmin_auth_data
+            )
+            # Set a quota of 20 bytes on the user's account before each test
+            headers = {"X-Account-Meta-Quota-Bytes": "20"}
 
-        self.os.account_client.request("POST", url="", headers=headers,
-                                       body="")
+            self.os.account_client.request("POST", url="", headers=headers,
+                                           body="")
 
     def tearDown(self):
         # Set the reselleradmin auth in headers for next account_client
         # request
-        self.account_client.auth_provider.set_alt_auth_data(
-            request_part='headers',
-            auth_data=self.reselleradmin_auth_data
-        )
-        # remove the quota from the container
-        headers = {"X-Remove-Account-Meta-Quota-Bytes": "x"}
+        if CONF.identity_feature_enabled.reseller:
+            self.account_client.auth_provider.set_alt_auth_data(
+                request_part='headers',
+                auth_data=self.reselleradmin_auth_data
+            )
+            # remove the quota from the container
+            headers = {"X-Remove-Account-Meta-Quota-Bytes": "x"}
 
-        self.os.account_client.request("POST", url="", headers=headers,
-                                       body="")
+            self.os.account_client.request("POST", url="", headers=headers,
+                                           body="")
         super(AccountQuotasNegativeTest, self).tearDown()
 
     @classmethod
