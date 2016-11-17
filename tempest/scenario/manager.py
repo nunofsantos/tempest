@@ -14,13 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import subprocess
 
 import netaddr
 from oslo_log import log
 from oslo_serialization import jsonutils as json
 from oslo_utils import netutils
 import six
+import subprocess
 
 from tempest.common import compute
 from tempest.common import image as common_image
@@ -215,6 +215,10 @@ class ScenarioTest(tempest.test.BaseTestCase):
                       imageRef=None, volume_type=None):
         if size is None:
             size = CONF.volume.volume_size
+        if imageRef:
+            image = self.compute_images_client.show_image(imageRef)['image']
+            min_disk = image.get('minDisk')
+            size = max(size, min_disk)
         if name is None:
             name = data_utils.rand_name(self.__class__.__name__)
         kwargs = {'display_name': name,
