@@ -88,10 +88,10 @@ class TestVolumeBootPattern(manager.ScenarioTest):
 
         return snap
 
-    def _create_volume_from_snapshot(self, snap_id):
+    def _create_volume_from_snapshot(self, snap):
         vol_name = data_utils.rand_name(
             self.__class__.__name__ + '-volume')
-        return self.create_volume(name=vol_name, snapshot_id=snap_id)
+        return self.create_volume(name=vol_name, snapshot_id=snap['id'], size=snap['size'])
 
     def _delete_server(self, server):
         self.servers_client.delete_server(server['id'])
@@ -153,10 +153,12 @@ class TestVolumeBootPattern(manager.ScenarioTest):
 
         # create a 3rd instance from snapshot
         LOG.info("Creating third instance from snapshot: %s" % snapshot['id'])
-        volume = self._create_volume_from_snapshot(snapshot['id'])
+        volume = self._create_volume_from_snapshot(snapshot)
+        LOG.info("Booting instance 3 from snapshot")
         server_from_snapshot = (
             self._boot_instance_from_volume(volume['id'],
                                             keypair, security_group))
+        LOG.info("Booted third instance %s" % server_from_snapshot)
 
         # check the content of written file
         LOG.info("Logging into third instance to get timestamp: %s" %
