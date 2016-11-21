@@ -91,7 +91,8 @@ class TestVolumeBootPattern(manager.ScenarioTest):
     def _create_volume_from_snapshot(self, snap):
         vol_name = data_utils.rand_name(
             self.__class__.__name__ + '-volume')
-        return self.create_volume(name=vol_name, snapshot_id=snap['id'], size=snap['size'])
+        return self.create_volume(name=vol_name, snapshot_id=snap['id'],
+                                  size=snap['size'])
 
     def _delete_server(self, server):
         self.servers_client.delete_server(server['id'])
